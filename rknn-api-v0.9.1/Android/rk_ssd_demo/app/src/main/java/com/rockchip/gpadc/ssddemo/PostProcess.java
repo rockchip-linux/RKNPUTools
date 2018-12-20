@@ -10,10 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
@@ -28,7 +24,7 @@ import com.rockchip.gpadc.ssddemo.InferenceResult.Recognition;
  */
 
 public class PostProcess {
-    private float mMinScore = 0.35f;        // SSD 阈值
+    private float mMinScore = 0.5f;        // SSD 阈值
     private float mNmsThreshold = 0.45f;   // NMS阈值
     ArrayList<Recognition> recognitions = new ArrayList<Recognition>();
 
@@ -58,17 +54,6 @@ public class PostProcess {
         recognitions.clear();
     }
 
-    Comparator<OutputResult> comparator = new Comparator<OutputResult>() {
-        @Override
-        public int compare(OutputResult outputResult, OutputResult t1) {
-            if (t1.score - outputResult.score > 0) {
-                return 1;
-            } else {
-                return -1;
-            }
-        }
-    };
-
     public  ArrayList<Recognition> postProcess(InferenceResult.OutputBuffer outputs) {
 
         recognitions.clear();
@@ -79,7 +64,7 @@ public class PostProcess {
 
         float[] outputLocations = outputs.mLocations;
         float[] outputClasses = outputs.mClasses;
-        ArrayList<OutputResult> filterdOutputs = new ArrayList<>();
+        int[] [] output = new int[2][NUM_RESULTS];
         int validCount = 0;
 
         decodeCenterSizeBoxes(outputLocations);
@@ -88,10 +73,10 @@ public class PostProcess {
         for (int i = 0; i < NUM_RESULTS; ++i) {
             float topClassScore = -1000f;
             int topClassScoreIndex = -1;
-            float score = 0.0f;
+
             // Skip the first catch-all class.
             for (int j = 1; j < NUM_CLASSES; ++j) {
-                score = expit(outputClasses[i*NUM_CLASSES +j]);
+                float score = expit(outputClasses[i*NUM_CLASSES +j]);
 
                 if (score > topClassScore) {
                     topClassScoreIndex = j;
@@ -100,30 +85,31 @@ public class PostProcess {
             }
 
             if (topClassScore >= mMinScore) {
-                OutputResult output = new OutputResult(i, topClassScoreIndex, topClassScore);
-                filterdOutputs.add(output);
+
+                output[0][validCount] = i;
+                output[1][validCount] = topClassScoreIndex;
+
+                ++validCount;
+
             }
         }
-
-        validCount = filterdOutputs.size();
 
         if(validCount > 100) {
             Log.d(TAG, "something may wrong! validCount=" + validCount);
             return recognitions;
         }
 
-        Collections.sort(filterdOutputs, comparator);
         //NMS
         for (int i=0; i<validCount; ++i) {
 
-            if (filterdOutputs.get(i).valid == false) {
+            if (output[0][i] == -1) {
                 continue;
             }
 
-            int n = filterdOutputs.get(i).outputIndex;
+            int n = output[0][i];
 
             for (int j=i+1; j<validCount; ++j) {
-                int m = filterdOutputs.get(j).outputIndex;
+                int m = output[0][j];
 
                 if (m == -1) {
                     continue;
@@ -142,20 +128,19 @@ public class PostProcess {
                 float iou = CalculateOverlap(xmin0, ymin0, xmax0, ymax0, xmin1, ymin1, xmax1, ymax1);
 
                 if (iou >= mNmsThreshold) {
-                    filterdOutputs.get(j).valid = false;
+                    output[0][j] = -1;
                 }
             }
         }
 
         for (int i=0; i<validCount; ++i) {
 
-            if (filterdOutputs.get(i).valid == false) {
+            if (output[0][i] == -1) {
                 continue;
             }
 
-            int n = filterdOutputs.get(i).outputIndex;
-            int topClassScoreIndex = filterdOutputs.get(i).topClassScoreIndex;
-            float score = filterdOutputs.get(i).score;
+            int n = output[0][i];
+            int topClassScoreIndex = output[1][i];
 
             RectF detection =
                     new RectF(
@@ -167,7 +152,7 @@ public class PostProcess {
             Recognition recog = new Recognition(
                     topClassScoreIndex,
                     labels.get(topClassScoreIndex),
-                    score,
+                    expit(outputClasses[n*NUM_CLASSES + topClassScoreIndex]),
                     detection);
 
             recognitions.add(recog);
@@ -274,20 +259,6 @@ public class PostProcess {
             predictions[i*4 + 2] = formatlocation(ymax);
             predictions[i*4 + 3] = formatlocation(xmax);
 
-        }
-    }
-
-    class OutputResult {
-        int outputIndex;
-        int topClassScoreIndex;
-        float score;
-        boolean valid;
-
-        public OutputResult(int outputIndex, int topClassScoreIndex, float score) {
-            this.outputIndex = outputIndex;
-            this.topClassScoreIndex = topClassScoreIndex;
-            this.score = score;
-            valid = true;
         }
     }
 }

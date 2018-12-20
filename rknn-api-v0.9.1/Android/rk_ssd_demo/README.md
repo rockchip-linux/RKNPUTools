@@ -4,8 +4,6 @@
 # 使用说明
  - 可以使用android studio编译该工程
  - ssd.rknn是使用rknn toolkit将ssd-mobilenetv1.pb转换而来，具体转换方法参考rknn toolkit的参考文档
- - 该demo依赖libDirectTexture.so，需要在android系统中添加该库(/system/lib/ /system/lib64/)，并且在/etc/public.libraries.txt中添加libDirectTexture.so
- - libDirectTexture.so预编译库在prebuilt/libDirectTexture目录中
 
 # 代码说明
 ## 代码分为三大部分：

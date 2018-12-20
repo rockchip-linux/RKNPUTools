@@ -275,7 +275,6 @@ public class CameraSurfaceRender implements GLSurfaceView.Renderer {
 
             String paramPath = fileDirPath + "/" + mModelName;
             mInferenceWrapper = new InferenceWrapper(INPUT_SIZE, PostProcess.INPUT_CHANNEL, PostProcess.NUM_RESULTS, PostProcess.NUM_CLASSES, paramPath);
-            Log.d("xxx", "mInferenceRunnable");
             while (!mStopInference) {
                 ImageBufferQueue.ImageBuffer buffer = mImageBufferQueue.getReadyBuffer();
 

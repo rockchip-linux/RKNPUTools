@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 23
+    compileSdkVersion 28
     buildToolsVersion '28.0.3'
 
     defaultConfig {
         applicationId "com.rockchip.gpadc.ssddemo"
-        minSdkVersion 17
-        targetSdkVersion 19
+        minSdkVersion 27
+        targetSdkVersion 28
 
         externalNativeBuild {
             cmake {
@@ -50,5 +50,5 @@ repositories {
 }
 
 dependencies {
-    compile project(':glhelper')
+    implementation project(':glhelper')
 }

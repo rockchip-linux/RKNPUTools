@@ -27,6 +27,9 @@ find_library( # Sets the name of the path variable.
               log )
 
 set(link_libs ${CMAKE_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/librknn_api.so
+              EGL
+              GLESv2
+              android
               ${log-lib}
 )
 

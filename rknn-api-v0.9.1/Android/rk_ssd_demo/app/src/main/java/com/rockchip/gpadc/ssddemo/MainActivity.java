@@ -146,11 +146,8 @@ public class MainActivity extends Activity {
             detection.bottom *= height;
 
             //Log.d(TAG, rego.toString());
-            mTrackResultCanvas.drawLine(detection.left, detection.top, detection.right, detection.top, mTrackResultPaint);
-            mTrackResultCanvas.drawLine(detection.right, detection.top, detection.right, detection.bottom, mTrackResultPaint);
-            mTrackResultCanvas.drawLine(detection.left, detection.bottom, detection.right, detection.bottom, mTrackResultPaint);
-            mTrackResultCanvas.drawLine(detection.left, detection.top, detection.left, detection.bottom, mTrackResultPaint);
 
+            mTrackResultCanvas.drawRect(detection, mTrackResultPaint);
             mTrackResultCanvas.drawText(rego.getTitle(), detection.left+5, detection.bottom-5, mTrackResultTextPaint);
         }
 
