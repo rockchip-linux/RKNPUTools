@@ -7,6 +7,8 @@
 #include "direct_texture.h"
 
 #include <android/log.h>
+#include <cstdlib>
+#include <string.h>
 
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "dtexture", ##__VA_ARGS__);
 #define LOGE(...) __android_log_print(ANDROID_LOG_INFO, "dtexture", ##__VA_ARGS__);

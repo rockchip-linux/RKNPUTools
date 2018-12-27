@@ -23,7 +23,7 @@
 
 namespace ssd_image {
 
-int ctx = -1;
+rknn_context ctx = 0;
 bool created = false;
 
 const int input_index = 0;      // node name "Preprocessor/sub"
@@ -39,7 +39,7 @@ int output_size0 = 0;
 int output_elems1 = 0;
 int output_size1 = 0;
 
-struct rknn_tensor_attr outputs_attr[2];
+rknn_tensor_attr outputs_attr[2];
 
 void create(int inputSize, int channel, int numResult, int numClasses, char *mParamPath)
 {
@@ -74,16 +74,16 @@ void create(int inputSize, int channel, int numResult, int numClasses, char *mPa
     fclose(fp);
 
     // RKNN_FLAG_ASYNC_MASK: enable async mode to use NPU efficiently.
-    ctx = rknn_init(model, model_len, RKNN_FLAG_PRIOR_MEDIUM|RKNN_FLAG_ASYNC_MASK);
+    int ret = rknn_init(&ctx, model, model_len, RKNN_FLAG_PRIOR_MEDIUM|RKNN_FLAG_ASYNC_MASK);
     free(model);
 
-    if(ctx < 0) {
-        LOGE("rknn_init fail! ret=%d\n", ctx);
+    if(ret < 0) {
+        LOGE("rknn_init fail! ret=%d\n", ret);
         return;
     }
 
     outputs_attr[0].index = output_index0;
-    int ret = rknn_query(ctx, RKNN_QUERY_OUTPUT_ATTR, &(outputs_attr[0]), sizeof(outputs_attr[0]));
+    ret = rknn_query(ctx, RKNN_QUERY_OUTPUT_ATTR, &(outputs_attr[0]), sizeof(outputs_attr[0]));
     if(ret < 0) {
         LOGI("rknn_query fail! ret=%d\n", ret);
         return;
@@ -112,7 +112,14 @@ bool run_ssd(char *inData, float *y0, float *y1)
         return false;
     }
 
-    int ret = rknn_input_set(ctx, input_index, inData, img_width * img_height * img_channels, RKNN_INPUT_ORDER_012);
+    rknn_input inputs[1];
+    inputs[0].index = input_index;
+    inputs[0].buf = inData;
+    inputs[0].size = img_width * img_height * img_channels;
+    inputs[0].pass_through = false;
+    inputs[0].type = RKNN_TENSOR_UINT8;
+    inputs[0].fmt = RKNN_TENSOR_NHWC;
+    int ret = rknn_inputs_set(ctx, 1, inputs);
     if(ret < 0) {
         LOGE("rknn_input_set fail! ret=%d\n", ret);
         return false;
@@ -124,46 +131,37 @@ bool run_ssd(char *inData, float *y0, float *y1)
         return false;
     }
 
-    struct rknn_output outputs[2];
-    int h_output = rknn_outputs_get(ctx, 2, outputs, nullptr);
-    if(h_output < 0) {
+    rknn_output outputs[2];
+#if 0
+    outputs[0].want_float = true;
+    outputs[0].is_prealloc = true;
+    outputs[0].index = output_index0;
+    outputs[0].buf = y0;
+    outputs[0].size = output_size0;
+    outputs[1].want_float = true;
+    outputs[1].is_prealloc = true;
+    outputs[1].index = output_index1;
+    outputs[1].buf = y1;
+    outputs[1].size = output_size1;
+#else  // for workround the wrong order issue of output index.
+    outputs[0].want_float = true;
+    outputs[0].is_prealloc = true;
+    outputs[0].index = output_index0;
+    outputs[0].buf = y1;
+    outputs[0].size = output_size1;
+    outputs[1].want_float = true;
+    outputs[1].is_prealloc = true;
+    outputs[1].index = output_index1;
+    outputs[1].buf = y0;
+    outputs[1].size = output_size0;
+#endif
+    ret = rknn_outputs_get(ctx, 2, outputs, nullptr);
+    if(ret < 0) {
         LOGE("rknn_outputs_get fail! ret=%d\n", ret);
         return false;
     }
 
-    if(outputs[0].size == outputs_attr[0].size && outputs[1].size == outputs_attr[1].size) {
-    #if 0
-        if(outputs_attr[0].type != RKNN_TENSOR_FLOAT32) {
-            rknn_output_to_float(ctx, outputs[0], y0, output_size0);
-        } else {
-            memcpy(y0, outputs[0].buf, output_size0);
-        }
-
-        if(outputs_attr[1].type != RKNN_TENSOR_FLOAT32) {
-            rknn_output_to_float(ctx, outputs[1], y1, output_size1);
-        } else {
-            memcpy(y1, outputs[1].buf, output_size1);
-        }
-    #else   //dkm: for workround the wrong order issue of output index.
-        if(outputs_attr[1].type != RKNN_TENSOR_FLOAT32) {
-            rknn_output_to_float(ctx, outputs[1], y0, output_size0);
-        } else {
-            memcpy(y0, outputs[1].buf, output_size0);
-        }
-
-        if(outputs_attr[0].type != RKNN_TENSOR_FLOAT32) {
-            rknn_output_to_float(ctx, outputs[0], y1, output_size1);
-        } else {
-            memcpy(y1, outputs[0].buf, output_size1);
-        }
-    #endif
-    } else {
-        LOGI("rknn_outputs_get fail! get outputs_size = [%d, %d], but expect [%d, %d]!\n",
-            outputs[0].size, outputs[1].size, outputs_attr[0].size, outputs_attr[1].size);
-    }
-
-
-    rknn_outputs_release(ctx, h_output);
+    rknn_outputs_release(ctx, 2, outputs);
     return true;
 }
 
@@ -182,7 +180,14 @@ bool run_ssd(int texId, float *y0, float *y1)
         return false;
     }
 
-    int ret = rknn_input_set(ctx, input_index, inData, img_width * img_height * img_channels, RKNN_INPUT_ORDER_012);
+    rknn_input inputs[1];
+    inputs[0].index = input_index;
+    inputs[0].buf = inData;
+    inputs[0].size = img_width * img_height * img_channels;
+    inputs[0].pass_through = false;
+    inputs[0].type = RKNN_TENSOR_UINT8;
+    inputs[0].fmt = RKNN_TENSOR_NHWC;
+    int ret = rknn_inputs_set(ctx, 1, inputs);
 
     gDirectTexture.releaseBufferByTexId(texId);
 
@@ -197,46 +202,37 @@ bool run_ssd(int texId, float *y0, float *y1)
         return false;
     }
 
-    struct rknn_output outputs[2];
-
-    int h_output = rknn_outputs_get(ctx, 2, outputs, nullptr);
-    if(h_output < 0) {
+    rknn_output outputs[2];
+#if 0
+    outputs[0].want_float = true;
+    outputs[0].is_prealloc = true;
+    outputs[0].index = output_index0;
+    outputs[0].buf = y0;
+    outputs[0].size = output_size0;
+    outputs[1].want_float = true;
+    outputs[1].is_prealloc = true;
+    outputs[1].index = output_index1;
+    outputs[1].buf = y1;
+    outputs[1].size = output_size1;
+#else  // for workround the wrong order issue of output index.
+    outputs[0].want_float = true;
+    outputs[0].is_prealloc = true;
+    outputs[0].index = output_index0;
+    outputs[0].buf = y1;
+    outputs[0].size = output_size1;
+    outputs[1].want_float = true;
+    outputs[1].is_prealloc = true;
+    outputs[1].index = output_index1;
+    outputs[1].buf = y0;
+    outputs[1].size = output_size0;
+#endif
+    ret = rknn_outputs_get(ctx, 2, outputs, nullptr);
+    if(ret < 0) {
         LOGE("rknn_outputs_get fail! ret=%d\n", ret);
         return false;
     }
 
-    if(outputs[0].size == outputs_attr[0].size && outputs[1].size == outputs_attr[1].size) {
-    #if 0
-        if(outputs_attr[0].type != RKNN_TENSOR_FLOAT32) {
-            rknn_output_to_float(ctx, outputs[0], y0, output_size0);
-        } else {
-            memcpy(y0, outputs[0].buf, output_size0);
-        }
-
-        if(outputs_attr[1].type != RKNN_TENSOR_FLOAT32) {
-            rknn_output_to_float(ctx, outputs[1], y1, output_size1);
-        } else {
-            memcpy(y1, outputs[1].buf, output_size1);
-        }
-    #else   //dkm: for workround the wrong order issue of output index.
-        if(outputs_attr[1].type != RKNN_TENSOR_FLOAT32) {
-            rknn_output_to_float(ctx, outputs[1], y0, output_size0);
-        } else {
-            memcpy(y0, outputs[1].buf, output_size0);
-        }
-
-        if(outputs_attr[0].type != RKNN_TENSOR_FLOAT32) {
-            rknn_output_to_float(ctx, outputs[0], y1, output_size1);
-        } else {
-            memcpy(y1, outputs[0].buf, output_size1);
-        }
-    #endif
-    } else {
-        LOGI("rknn_outputs_get fail! get outputs_size = [%d, %d], but expect [%d, %d]!\n",
-            outputs[0].size, outputs[1].size, outputs_attr[0].size, outputs_attr[1].size);
-    }
-
-    rknn_outputs_release(ctx, h_output);
+    rknn_outputs_release(ctx, 2, outputs);
     return true;
 }
 
