@@ -59,7 +59,7 @@ extern "C" {
 #define RKNN_ERR_OUTPUT_INVALID                 -9      /* output is invalid. */
 #define RKNN_ERR_DEVICE_UNMATCH                 -10     /* the device is unmatch, please update rknn sdk
                                                            and npu driver/firmware. */
-
+#define RKNN_ERR_INCOMPATILE_PRE_COMPILE_MODEL  -11     /* This RKNN model use pre_compile mode, but not compatible with current driver. */
 /*
     Definition for tensor
 */
