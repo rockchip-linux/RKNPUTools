@@ -209,6 +209,14 @@ typedef struct _rknn_output {
 } rknn_output;
 
 /*
+    the extend information for rknn_init.
+*/
+typedef struct _rknn_init_extend {
+    char* device_id;                                    /* input parameter, indicate which device selected. if only one
+                                                           device connected, can set nullptr. */
+} rknn_init_extend;
+
+/*
     the extend information for rknn_run.
 */
 typedef struct _rknn_run_extend {
@@ -237,6 +245,22 @@ typedef struct _rknn_output_extend {
         int                         error code.
 */
 int rknn_init(rknn_context* context, void* model, uint32_t size, uint32_t flag);
+
+
+/*  rknn_init2
+
+    initial the context and load the rknn model (version 2).
+
+    input:
+        rknn_context* context       the pointer of context handle.
+        void* model                 pointer to the rknn model.
+        uint32_t size               the size of rknn model.
+        uint32_t flag               extend flag, see the define of RKNN_FLAG_XXX_XXX.
+        rknn_init_extend* extend    the extend information of init.
+    return:
+        int                         error code.
+*/
+int rknn_init2(rknn_context* context, void* model, uint32_t size, uint32_t flag, rknn_init_extend* extend);
 
 
 /*  rknn_destroy
