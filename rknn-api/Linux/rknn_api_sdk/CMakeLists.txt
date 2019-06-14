@@ -1,25 +1,25 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_SYSTEM_NAME Linux)
-set(CMAKE_BUILD_TYPE Release)
-
-set(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)
-set(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+    set(ARCH_DIR x86)
+else()
+    set(ARCH_DIR arm)
+endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 
 include_directories(
-    ${CMAKE_SOURCE_DIR}/3rdparty/opencv/include
-    ${CMAKE_SOURCE_DIR}/rknn_api/include
+    ${CMAKE_SOURCE_DIR}/3rdparty/opencv/${ARCH_DIR}/include
+    ${CMAKE_SOURCE_DIR}/rknn_api/${ARCH_DIR}/include
 )
 
-set(link_libs  ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib64/libopencv_core.so
-               ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib64/libopencv_highgui.so
-               ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib64/libopencv_imgcodecs.so
-               ${CMAKE_SOURCE_DIR}/3rdparty/opencv/lib64/libopencv_imgproc.so
-               ${CMAKE_SOURCE_DIR}/rknn_api/lib64/librknn_api.so
+set(link_libs  ${CMAKE_SOURCE_DIR}/3rdparty/opencv/${ARCH_DIR}/lib64/libopencv_core.so
+               ${CMAKE_SOURCE_DIR}/3rdparty/opencv/${ARCH_DIR}/lib64/libopencv_highgui.so
+               ${CMAKE_SOURCE_DIR}/3rdparty/opencv/${ARCH_DIR}/lib64/libopencv_imgcodecs.so
+               ${CMAKE_SOURCE_DIR}/3rdparty/opencv/${ARCH_DIR}/lib64/libopencv_imgproc.so
+               ${CMAKE_SOURCE_DIR}/rknn_api/${ARCH_DIR}/lib64/librknn_api.so
                pthread
 )
 
