@@ -66,6 +66,11 @@ extern "C" {
 #define RKNN_MAX_DIMS                           16      /* maximum dimension of tensor. */
 #define RKNN_MAX_NAME_LEN                       256     /* maximum name lenth of tensor. */
 
+/*
+    Definition for deivce id
+*/
+#define RKNN_MAX_DEVS                           256     /* maximum number of device. */
+#define RKNN_MAX_DEV_LEN                        64      /* maximum id/type lenth of device. */
 
 typedef uint64_t rknn_context;
 
@@ -175,6 +180,15 @@ typedef struct _rknn_sdk_version {
 } rknn_sdk_version;
 
 /*
+    the information for rknn_find_devices.
+*/
+typedef struct _rknn_devices_id {
+    uint32_t n_devices;                                 /* the number of devices. */
+    char types[RKNN_MAX_DEVS][RKNN_MAX_DEV_LEN];        /* the array of device type. */
+    char ids[RKNN_MAX_DEVS][RKNN_MAX_DEV_LEN];          /* the array of device ID. */
+} rknn_devices_id;
+
+/*
     the input information for rknn_input_set.
 */
 typedef struct _rknn_input {
@@ -230,6 +244,18 @@ typedef struct _rknn_output_extend {
     uint64_t frame_id;                                  /* output parameter, indicate the frame id of outputs, corresponds to
                                                            struct rknn_run_extend.frame_id.*/
 } rknn_output_extend;
+
+
+/*  rknn_find_devices
+
+    find the devices that connected to host.
+
+    input:
+        rknn_devices_id* pdevs      the pointer of devices information structure.
+    return:
+        int                         error code.
+*/
+int rknn_find_devices(rknn_devices_id* pdevs);
 
 
 /*  rknn_init
