@@ -44,6 +44,12 @@ extern "C" {
    but it will reduce the frame rate. */
 #define RKNN_FLAG_COLLECT_PERF_MASK             0x00000008
 
+/* You can store the rknn model under NPU, 
+ * when you call rknn_init(), you can pass the filename of model instead of model data.
+ * Then you can hide your model and be invisible to the end user.
+ * */
+#define RKNN_FLAG_LOAD_MODEL_IN_NPU				0x00000010
+
 /*
     Error code returned by the RKNN API.
 */
